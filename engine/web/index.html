@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YTROAD</title>
+<link rel="icon" href="/icon.png">
+<link rel="stylesheet" href="/css/app.css">
+<script>
+  // 화면 모드를 먼저 적용해서 깜빡임을 막아요
+  try { const t = localStorage.getItem('ytroad-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch {}
+</script>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <img src="/icon.png" alt="" class="brand-logo">
+    <div>
+      <div class="brand-name"><span class="yt">YT</span>ROAD</div>
+      <div class="brand-sub">YouTube 영상 · 음악 다운로더</div>
+    </div>
+  </div>
+  <div class="top-mid" id="topLive" hidden>
+    <span class="live-dot"></span><span id="topLiveText">받는 중</span>
+  </div>
+  <div class="top-actions">
+    <button class="ver-badge" id="verBadge" title="버전 · 업데이트"><span class="ver-dot"></span><span id="verText">v</span></button>
+    <div class="theme-toggle" id="themeToggle">
+      <button data-theme="system" title="시스템 설정 따르기"><svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 1.8a6.2 6.2 0 0 1 0 12.4z" fill="currentColor"/></svg></button>
+      <button data-theme="light" title="라이트 모드"><svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="3.2" fill="currentColor"/><g stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 1v1.8M8 13.2V15M1 8h1.8M13.2 8H15M3.05 3.05l1.27 1.27M11.68 11.68l1.27 1.27M3.05 12.95l1.27-1.27M11.68 4.32l1.27-1.27"/></g></svg></button>
+      <button data-theme="dark" title="다크 모드"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M13.6 10.4A6 6 0 0 1 5.6 2.4a6 6 0 1 0 8 8z" fill="currentColor"/></svg></button>
+    </div>
+    <button class="icon-btn" id="settingsBtn" title="설정"><svg viewBox="0 0 16 16" width="15" height="15"><path fill="currentColor" d="M9.4 1l.35 1.7a5.6 5.6 0 0 1 1.3.75l1.65-.55 1.4 2.4-1.3 1.15a5.7 5.7 0 0 1 0 1.5l1.3 1.15-1.4 2.4-1.650-.55a5.6 5.6 0 0 1-1.3.75L9.4 15H6.6l-.35-1.7a5.6 5.6 0 0 1-1.3-.75l-1.65.55-1.4-2.4 1.3-1.15a5.7 5.7 0 0 1 0-1.5L1.9 6.9l1.4-2.4 1.65.55a5.6 5.6 0 0 1 1.3-.75L6.6 1zM8 5.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z"/></svg></button>
+    <button class="icon-btn" id="quitBtn" title="YTROAD 종료"><svg viewBox="0 0 16 16" width="15" height="15"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 1.8v6"/><path d="M4.6 4a5.2 5.2 0 1 0 6.8 0"/></g></svg></button>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="content" id="content">
+
+    <!-- ───────── 처음 한 번 준비 ───────── -->
+    <div class="hero setup" id="setupCard" hidden>
+      <div class="hero-text">
+        <div class="eyebrow">👋 반가워요!</div>
+        <h1>처음 한 번만<br>준비할게요</h1>
+        <p class="lead">영상을 받고 변환하는 데 필요한 도구를 받는 중이에요.<br>약 200MB · 보통 1~3분이면 끝나요.</p>
+        <div class="setup-list" id="setupList"></div>
+        <div class="setup-note" id="setupNote" hidden></div>
+        <div class="setup-err" id="setupErr" hidden>
+          <span id="setupErrText"></span>
+          <button class="btn primary sm" id="setupRetry">🔁 다시 시도</button>
+        </div>
+      </div>
+      <div class="hero-art" data-art="setup"></div>
+    </div>
+
+    <!-- ───────── 1·2단계: 주소 입력 → 확인 ───────── -->
+    <div class="hero" id="composer">
+      <div class="hero-text">
+        <ol class="steps" id="steps">
+          <li data-s="1"><i>1</i>주소 붙여넣기</li>
+          <li data-s="2"><i>2</i>확인 · 형식 고르기</li>
+          <li data-s="3"><i>3</i>받기</li>
+        </ol>
+
+        <div id="step1">
+          <h1>유튜브 주소를<br><span class="hl">붙여넣으세요</span></h1>
+          <p class="lead">여러 개는 한 줄에 하나씩 · 한 번에 <b id="leadPar">10</b>개까지 동시에 받아요</p>
+          <div class="url-box" id="urlBox">
+            <svg class="url-ico" viewBox="0 0 24 24" width="20" height="20"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>
+            <textarea id="urls" spellcheck="false" rows="3" placeholder="https://www.youtube.com/watch?v=…&#10;https://youtu.be/…"></textarea>
+          </div>
+          <div class="row">
+            <span class="detect" id="detect">주소를 붙여넣으면 자동으로 찾아 드려요</span>
+            <span class="sp"></span>
+            <button class="btn ghost" id="pasteBtn">📋 붙여넣기</button>
+            <button class="btn primary" id="nextBtn" disabled>다음 <span class="kbd">⌘↩</span></button>
+          </div>
+        </div>
+
+        <div id="step2" hidden>
+          <div class="s2-head">
+            <h2>받을 영상 <span class="count" id="pvCount"></span></h2>
+            <span class="sp"></span>
+            <span class="s2-sum" id="s2Sum"></span>
+          </div>
+          <div class="pv-list" id="pvList"></div>
+          <div class="row">
+            <button class="btn ghost" id="backBtn">← 주소 수정</button>
+            <span class="sp"></span>
+            <button class="btn primary big" id="startBtn">⬇︎ 다운로드 시작</button>
+          </div>
+        </div>
+      </div>
+      <div class="hero-art" id="heroArt" data-art="hero"></div>
+    </div>
+
+    <!-- ───────── 다운로드 현황 ───────── -->
+    <div class="panel dash" id="dash">
+      <div class="dash-head">
+        <h2>📊 다운로드 현황</h2>
+        <div class="tabs" id="jobTabs">
+          <button data-f="all" class="on">전체 <b id="cAll">0</b></button>
+          <button data-f="active">받는 중 <b id="cActive">0</b></button>
+          <button data-f="done">완료 <b id="cDone">0</b></button>
+          <button data-f="error">실패 <b id="cErr">0</b></button>
+        </div>
+        <span class="sp"></span>
+        <button class="btn ghost sm" id="retryAllBtn" hidden>🔁 실패 모두 다시</button>
+        <button class="btn ghost sm" id="clearBtn" hidden>🧹 끝난 항목 지우기</button>
+      </div>
+
+      <div class="stats">
+        <div class="tile hot">
+          <div class="k">⚡ 전체 속도</div>
+          <div class="v num" id="sSpeed">0<small>MB/s</small></div>
+        </div>
+        <div class="tile">
+          <div class="k">⬇️ 받는 중</div>
+          <div class="v num"><span id="sActive">0</span><small id="sPar">/ 10</small></div>
+        </div>
+        <div class="tile">
+          <div class="k">⏳ 대기</div>
+          <div class="v num" id="sQueued">0</div>
+        </div>
+        <div class="tile">
+          <div class="k">✅ 완료</div>
+          <div class="v num" id="sDone">0</div>
+        </div>
+        <div class="tile chart-tile">
+          <canvas id="chart"></canvas>
+          <div class="cap"><span>📈 최근 60초 속도</span><span class="num" id="chartMax"></span></div>
+        </div>
+      </div>
+      <div class="overall" id="overall" hidden>
+        <span>전체 진행률</span>
+        <div class="bar"><div class="fill" id="oFill"></div></div>
+        <b class="num" id="oPct">0%</b><span class="num" id="oEta"></span>
+      </div>
+
+      <div class="jobs" id="jobs"></div>
+      <div class="empty" id="empty">
+        <div class="empty-art" data-art="empty"></div>
+        <p>아직 받은 영상이 없어요</p>
+        <small>위에 유튜브 주소를 붙여넣고 시작해 보세요 🍿</small>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── 오른쪽 설정 ───────── -->
+  <aside class="side">
+    <div class="side-scroll">
+      <div class="card">
+        <div class="card-title">🎯 저장 형식</div>
+        <div class="fmt-grid" id="fmtGrid">
+          <button class="fmt" data-fmt="mp4"><span class="fi" data-icon="mp4"></span><b>MP4</b><small>영상 + 소리</small></button>
+          <button class="fmt" data-fmt="mp3"><span class="fi" data-icon="mp3"></span><b>MP3</b><small>음악 · 320kbps</small></button>
+          <button class="fmt" data-fmt="m4a"><span class="fi" data-icon="m4a"></span><b>M4A</b><small>원본 음질 그대로</small></button>
+          <button class="fmt" data-fmt="wav"><span class="fi" data-icon="wav"></span><b>WAV</b><small>무손실 오디오</small></button>
+        </div>
+      </div>
+
+      <div class="card" id="qualityCard">
+        <div class="card-title">✨ 화질 <span class="note" style="margin-left:auto">MP4</span></div>
+        <div class="q-grid" id="qGrid">
+          <button data-q="best"><b>👑 최고</b><small>가장 좋은 화질</small></button>
+          <button data-q="2160"><b>4K</b><small>2160p</small></button>
+          <button data-q="1440"><b>QHD</b><small>1440p</small></button>
+          <button data-q="1080"><b>FHD</b><small>1080p</small></button>
+          <button data-q="720"><b>HD</b><small>720p</small></button>
+          <button data-q="480"><b>SD</b><small>480p</small></button>
+        </div>
+        <div class="note">고른 화질이 없으면 그보다 낮은 것 중 가장 좋은 화질로 받아요.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📁 저장 위치</div>
+        <div class="folder-main" id="folderMain" title="눌러서 Finder에서 열기">
+          <span class="folder-ico" data-art="folder"></span>
+          <div class="folder-text"><div class="folder-name" id="folderName">Downloads</div><div class="folder-path" id="folderPath">~/Downloads</div></div>
+        </div>
+        <div class="folder-btns">
+          <button class="btn ghost sm" id="folderChange">📂 변경…</button>
+          <button class="btn ghost sm" id="folderPin">📌 기본 폴더로 지정</button>
+        </div>
+        <div class="folder-sub" id="folderSub"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⚡ 동시 다운로드 <b class="par-val num" id="parVal">10개</b></div>
+        <input type="range" min="1" max="10" step="1" id="parRange" class="range">
+        <div class="note">여러 영상을 넣으면 최대 이 개수만큼 한꺼번에 받아요. 인터넷이 느리면 줄여 보세요.</div>
+      </div>
+    </div>
+    <div class="side-foot">made by. Nevertheless_D</div>
+  </aside>
+</main>
+
+<div class="toast" id="toast" hidden></div>
+<div class="drop-veil" id="dropVeil" hidden><div><div class="dv-ico">🔗</div><b>여기에 놓으면 주소를 넣어 드려요</b></div></div>
+
+<div class="modal-back" id="modal" hidden>
+  <div class="modal" id="modalBox">
+    <div class="modal-head">
+      <div><div class="modal-title" id="modalTitle"></div><div class="modal-sub" id="modalSub"></div></div>
+      <span class="sp"></span>
+      <div class="modal-actions" id="modalActions"></div>
+      <button class="btn ghost" id="modalClose">닫기</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script src="/js/art.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>

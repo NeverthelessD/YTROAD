@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff4a3d"/><stop offset=".55" stop-color="#ff0033"/><stop offset="1" stop-color="#b8001f"/>
+    </linearGradient>
+    <radialGradient id="hl" cx=".3" cy=".18" r=".7">
+      <stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="22" stdDeviation="26" flood-color="#000" flood-opacity=".32"/></filter>
+    <filter id="sh2" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#7a0014" flood-opacity=".45"/></filter>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)" filter="url(#sh)"/>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#hl)"/>
+  <!-- road: perspective lane going down -->
+  <g filter="url(#sh2)">
+    <!-- play button -->
+    <path d="M395 250 Q395 205 436 226 L668 352 Q706 374 668 396 L436 522 Q395 543 395 498 Z" fill="#fff" transform="translate(512 360) scale(.9) translate(-535 -374)"/>
+    <!-- download tray -->
+    <path d="M318 640 L318 722 Q318 772 368 772 L656 772 Q706 772 706 722 L706 640" fill="none" stroke="#fff" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- arrow into tray -->
+    <path d="M512 585 L512 690" stroke="#fff" stroke-width="54" stroke-linecap="round"/>
+    <path d="M446 632 L512 698 L578 632" fill="none" stroke="#fff" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
