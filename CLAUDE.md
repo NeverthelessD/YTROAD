@@ -60,3 +60,8 @@ launcher, tool setup, downloads, update/restart/rollback all run there. `YTROAD_
 
 Things only a real Mac can confirm: real YouTube downloads, osascript folder picker, notifications, Finder reveal, Chrome app window, Gatekeeper prompts.
 Only real Windows: SmartScreen, Edge app window, Explorer /select, tray notification, antivirus behaviour.
+
+## User-facing text
+
+Never mention GitHub (or the repo name) in anything the user sees — app screens, update messages, usage-guide images.
+Say "새 버전이 나오면 앱이 알아서 받아요" instead. The user asked for this for all of their apps.
