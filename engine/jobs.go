@@ -470,7 +470,7 @@ func (m *JobManager) runJob(j *Job) {
 	m.mu.Unlock()
 
 	if err := cmd.Start(); err != nil {
-		m.fail(j, "⚠️ 다운로드 엔진을 실행하지 못했어요. 설정에서 ‘엔진 다시 설치’를 해 보세요.")
+		m.fail(j, "⚠️ 다운로드 엔진을 실행하지 못했어요. YTROAD를 껐다가 다시 실행해 보세요. (백신 프로그램이 막았을 수도 있어요)")
 		return
 	}
 	var errLines []string

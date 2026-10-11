@@ -1,9 +1,9 @@
 {
   "version": "1.1.0",
   "date": "2026-10-11",
-  "zip": "YTROAD-1.1.0.zip",
-  "sha256": "e1fd393c8151b9a0232daf5f2f068f83a84f42a42cb82675762edc5984efe01e",
-  "size": 10826286,
+  "zip": "YTROAD-win-1.1.0.zip",
+  "sha256": "8ded65d1cf4223471c581e5748369c07a6ba4a17fe35fa71662b38f4ea887c5c",
+  "size": 5281959,
   "notes": [
     "Windows 버전이 새로 나왔어요 (같은 기능 · 자동 업데이트)",
     "다운로드 엔진이 멈췄을 때 안내 문구를 더 쉽게 바꿨어요"

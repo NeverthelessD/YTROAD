@@ -19,6 +19,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -64,6 +65,15 @@ type App struct {
 var app *App
 
 func main() {
+	// Windows: YTROAD.exe 하나가 실행기와 엔진을 겸해요 (더블클릭 → 실행기, --engine → 엔진)
+	if launcherMode() {
+		runLauncher()
+		return
+	}
+	runEngine()
+}
+
+func runEngine() {
 	log.SetFlags(log.LstdFlags)
 	home, _ := os.UserHomeDir()
 	support := os.Getenv("YTROAD_SUPPORT")
@@ -301,6 +311,8 @@ func (a *App) routes() http.Handler {
 	})
 	api("/api/settings", a.handleSettings)
 	api("/api/choose-folder", a.handleChooseFolder)
+	api("/api/fs/list", a.handleFsList)
+	api("/api/fs/mkdir", a.handleFsMkdir)
 	api("/api/open-folder", func(w http.ResponseWriter, r *http.Request) {
 		var in struct {
 			Path string `json:"path"`
@@ -426,6 +438,8 @@ func (a *App) handleSettings(w http.ResponseWriter, r *http.Request) {
 		"home":                  home,
 		"build":                 build,
 		"platform":              runtime.GOOS + "/" + runtime.GOARCH,
+		"os":                    uiOS(),
+		"folderPicker":          folderPicker(),
 	})
 }
 
@@ -482,24 +496,10 @@ func (a *App) handleChooseFolder(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]any{"ok": true, "path": p})
 }
 
-func openPath(p string) {
-	if runtime.GOOS == "darwin" {
-		exec.Command("/usr/bin/open", p).Start()
-	}
-}
-
-func revealPath(p string) {
-	if runtime.GOOS == "darwin" {
-		exec.Command("/usr/bin/open", "-R", p).Start()
-	}
-}
-
 func notify(title, msg string) {
-	if runtime.GOOS != "darwin" || !app.Settings().Notify {
-		return
+	if app.Settings().Notify {
+		notifyOS(title, msg)
 	}
-	exec.Command("/usr/bin/osascript", "-e", "on run argv", "-e",
-		`display notification (item 2 of argv) with title (item 1 of argv) sound name "Glass"`, "-e", "end run", title, msg).Start()
 }
 
 // ---------------------------------------------------------------- utils
@@ -567,4 +567,124 @@ func init() {
 	mime.AddExtensionType(".js", "text/javascript")
 	mime.AddExtensionType(".woff2", "font/woff2")
 	mime.AddExtensionType(".svg", "image/svg+xml")
+}
+
+// ---------------------------------------------------------------- 앱 안 폴더 고르기 (Windows)
+// Windows 기본 폴더 창은 앱 창 뒤에 숨어 버리는 일이 많아서, 앱 화면 안에서 폴더를 고르게 해요.
+
+func uiOS() string {
+	if o := os.Getenv("YTROAD_FAKE_OS"); o != "" {
+		return o
+	}
+	return runtime.GOOS
+}
+
+func folderPicker() string {
+	if uiOS() == "windows" {
+		return "web"
+	}
+	return "native"
+}
+
+type fsEntry struct {
+	Name string `json:"name"`
+	Path string `json:"path"`
+	Icon string `json:"icon,omitempty"`
+}
+
+func quickPlaces() []fsEntry {
+	home, _ := os.UserHomeDir()
+	out := []fsEntry{}
+	for _, p := range []struct{ name, dir, icon string }{
+		{"다운로드", "Downloads", "⬇️"}, {"바탕 화면", "Desktop", "🖥️"}, {"문서", "Documents", "📄"},
+		{"동영상", "Videos", "🎬"}, {"음악", "Music", "🎵"}, {"사진", "Pictures", "🖼️"},
+	} {
+		d := filepath.Join(home, p.dir)
+		if st, err := os.Stat(d); err == nil && st.IsDir() {
+			out = append(out, fsEntry{p.name, d, p.icon})
+		}
+	}
+	return out
+}
+
+func drives() []fsEntry {
+	out := []fsEntry{}
+	if runtime.GOOS != "windows" {
+		return append(out, fsEntry{"내 컴퓨터", "/", "💽"})
+	}
+	for c := 'C'; c <= 'Z'; c++ {
+		root := string(c) + ":\\"
+		if _, err := os.Stat(root); err == nil {
+			out = append(out, fsEntry{string(c) + ": 드라이브", root, "💽"})
+		}
+	}
+	return out
+}
+
+func (a *App) handleFsList(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Path string `json:"path"`
+	}
+	readJSON(r, &in)
+	p := in.Path
+	if p == "" {
+		p = a.resolvedDefaultFolder()
+	}
+	p = filepath.Clean(p)
+	st, err := os.Stat(p)
+	if err != nil || !st.IsDir() {
+		p = downloadsFolder()
+	}
+	ents, err := os.ReadDir(p)
+	dirs := []fsEntry{}
+	if err == nil {
+		for _, e := range ents {
+			n := e.Name()
+			if strings.HasPrefix(n, ".") || strings.HasPrefix(n, "$") || n == "System Volume Information" || strings.EqualFold(n, "desktop.ini") {
+				continue
+			}
+			full := filepath.Join(p, n)
+			isDir := e.IsDir()
+			if !isDir && e.Type()&os.ModeSymlink != 0 {
+				if st, err := os.Stat(full); err == nil && st.IsDir() {
+					isDir = true
+				}
+			}
+			if isDir {
+				dirs = append(dirs, fsEntry{Name: n, Path: full})
+			}
+		}
+	}
+	sort.Slice(dirs, func(i, j int) bool { return strings.ToLower(dirs[i].Name) < strings.ToLower(dirs[j].Name) })
+	parent := filepath.Dir(p)
+	if parent == p {
+		parent = ""
+	}
+	writeJSON(w, map[string]any{
+		"path": p, "name": filepath.Base(p), "parent": parent, "dirs": dirs,
+		"places": quickPlaces(), "drives": drives(), "readable": err == nil,
+	})
+}
+
+func (a *App) handleFsMkdir(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Path string `json:"path"`
+		Name string `json:"name"`
+	}
+	readJSON(r, &in)
+	name := strings.TrimSpace(in.Name)
+	if name == "" || strings.ContainsAny(name, `\/:*?"<>|`) || name == "." || name == ".." {
+		jsonError(w, 400, "폴더 이름에 쓸 수 없는 글자가 있어요")
+		return
+	}
+	dir := filepath.Join(in.Path, name)
+	if err := os.Mkdir(dir, 0o755); err != nil {
+		if os.IsExist(err) {
+			jsonError(w, 400, "같은 이름의 폴더가 이미 있어요")
+			return
+		}
+		jsonError(w, 500, "이 위치에는 폴더를 만들 수 없어요")
+		return
+	}
+	writeJSON(w, map[string]any{"ok": true, "path": dir})
 }

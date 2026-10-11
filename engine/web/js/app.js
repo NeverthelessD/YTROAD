@@ -51,12 +51,19 @@ function timeTxt(s) {
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
   return h ? `${h}:${String(m).padStart(2, '0')}:${String(x).padStart(2, '0')}` : `${m}:${String(x).padStart(2, '0')}`;
 }
+// 맥 / Windows에 따라 달라지는 말
+const L = { fm: 'Finder', mod: '⌘', os: 'macOS', win: false };
+function setPlatform(os) {
+  if (os === 'windows') Object.assign(L, { fm: '탐색기', mod: 'Ctrl', os: 'Windows', win: true });
+  document.documentElement.dataset.os = L.win ? 'windows' : 'mac';
+  $('#nextBtn .kbd').textContent = L.win ? 'Ctrl ↵' : '⌘↩';
+}
 function shortPath(p) {
   const home = S.settings?.home;
-  if (home && (p === home || p.startsWith(home + '/'))) p = '~' + p.slice(home.length);
+  if (!L.win && home && (p === home || p.startsWith(home + '/'))) p = '~' + p.slice(home.length);
   return p;
 }
-const folderLabel = (p) => p.split('/').filter(Boolean).pop() || p;
+const folderLabel = (p) => p.split(/[\\/]/).filter(Boolean).pop() || p;
 
 // ════════════════════════════════════════════════ 화면 모드
 function applyTheme(v) {
@@ -101,7 +108,7 @@ $('#pasteBtn').onclick = async () => {
     if (S.step !== 1) setStep(1);
     addText(t);
     if (!extractUrls(t).length) toast('🤔 복사한 내용에서 주소를 찾지 못했어요');
-  } catch { toast('⌨️ 입력칸을 누르고 ⌘V로 붙여넣어 주세요'); $('#urls').focus(); }
+  } catch { toast(`⌨️ 입력칸을 누르고 ${L.mod}+V로 붙여넣어 주세요`); $('#urls').focus(); }
 };
 
 function setStep(n) {
@@ -215,7 +222,7 @@ function renderFolder() {
   const def = S.settings.resolvedDefaultFolder;
   $('#folderName').textContent = folderLabel(S.folder);
   $('#folderPath').textContent = '\u200E' + shortPath(S.folder) + '\u200E';
-  $('#folderMain').title = S.folder + '\n눌러서 Finder에서 열기';
+  $('#folderMain').title = S.folder + `\n눌러서 ${L.fm}에서 열기`;
   const isDef = S.folder === def;
   $('#folderPin').hidden = isDef;
   $('#folderSub').innerHTML = isDef
@@ -231,8 +238,68 @@ function renderFolder() {
   if (S.step === 2) $('#s2Sum').textContent = summaryText();
 }
 async function chooseFolder(prompt) {
+  if (S.settings.folderPicker === 'web') return pickFolderWeb(S.folder, prompt);
   const j = await api('/api/choose-folder', { start: S.folder, prompt }).catch((e) => { toast('⚠️ ' + e.message); return null; });
   return j?.path || '';
+}
+
+// 앱 화면 안에서 폴더 고르기 (Windows)
+function pickFolderWeb(start, title) {
+  return new Promise((resolve) => {
+    const el = document.createElement('div');
+    el.className = 'fp-back';
+    el.innerHTML = `
+      <div class="fp">
+        <div class="fp-head"><div><b>📁 폴더 고르기</b><small>${esc(title || '')}</small></div></div>
+        <div class="fp-main">
+          <div class="fp-side" id="fpSide"></div>
+          <div class="fp-list-wrap">
+            <div class="fp-path"><button class="btn ghost sm" id="fpUp" title="상위 폴더">⬆︎</button><span id="fpPath"></span></div>
+            <div class="fp-list" id="fpList"></div>
+          </div>
+        </div>
+        <div class="fp-foot">
+          <button class="btn ghost sm" id="fpNew">➕ 새 폴더</button>
+          <span class="sp"></span>
+          <button class="btn ghost" id="fpCancel">취소</button>
+          <button class="btn primary" id="fpOk">이 폴더 선택</button>
+        </div>
+      </div>`;
+    document.body.append(el);
+    let cur = null;
+    const done = (v) => { el.remove(); document.removeEventListener('keydown', onKey, true); resolve(v); };
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); done(''); } };
+    document.addEventListener('keydown', onKey, true);
+    async function go(path) {
+      let j;
+      try { j = await api('/api/fs/list', { path }); } catch (e) { toast('⚠️ ' + e.message); return; }
+      cur = j;
+      $('#fpPath', el).textContent = '\u200E' + j.path + '\u200E';
+      $('#fpUp', el).disabled = !j.parent;
+      $('#fpSide', el).innerHTML = [
+        '<div class="fp-cap">바로 가기</div>',
+        ...j.places.map((p) => `<button data-p="${esc(p.path)}" class="${p.path === j.path ? 'on' : ''}">${p.icon} ${esc(p.name)}</button>`),
+        '<div class="fp-cap">드라이브</div>',
+        ...j.drives.map((p) => `<button data-p="${esc(p.path)}" class="${p.path === j.path ? 'on' : ''}">${p.icon} ${esc(p.name)}</button>`),
+      ].join('');
+      $('#fpList', el).innerHTML = j.dirs.length
+        ? j.dirs.map((d) => `<button data-p="${esc(d.path)}"><span class="fp-ico">📁</span>${esc(d.name)}</button>`).join('')
+        : `<div class="fp-empty">${j.readable ? '안에 다른 폴더가 없어요.<br>이 폴더에 저장하려면 ‘이 폴더 선택’을 누르세요.' : '이 폴더는 열 수 없어요.'}</div>`;
+      $$('[data-p]', el).forEach((b) => (b.onclick = () => go(b.dataset.p)));
+      $('#fpList', el).scrollTop = 0;
+    }
+    $('#fpUp', el).onclick = () => cur?.parent && go(cur.parent);
+    $('#fpCancel', el).onclick = () => done('');
+    $('#fpOk', el).onclick = () => done(cur?.path || '');
+    el.addEventListener('mousedown', (e) => { if (e.target === el) done(''); });
+    $('#fpNew', el).onclick = async () => {
+      const name = prompt('새 폴더 이름을 입력하세요', 'YTROAD');
+      if (!name || !cur) return;
+      try { const j = await api('/api/fs/mkdir', { path: cur.path, name }); go(j.path); }
+      catch (e) { toast('⚠️ ' + e.message); }
+    };
+    go(start);
+  });
 }
 $('#folderChange').onclick = async () => {
   const p = await chooseFolder('받은 영상·음악을 저장할 폴더를 선택하세요');
@@ -308,7 +375,7 @@ const cards = new Map();
 function actionsFor(j) {
   if (j.state === 'queued') return `<button class="act" data-a="top" title="이 영상을 먼저 받기">⏫ 먼저</button><button class="act danger" data-a="cancel">✕ 취소</button>`;
   if (ACTIVE.includes(j.state)) return `<button class="act danger" data-a="cancel">✕ 취소</button>`;
-  if (j.state === 'done') return `<button class="act go" data-a="reveal">🔍 Finder에서 보기</button><button class="act ic" data-a="open" title="열어서 재생하기">▶︎</button><button class="act ic" data-a="remove" title="목록에서 빼기 (파일은 그대로)">✕</button>`;
+  if (j.state === 'done') return `<button class="act go" data-a="reveal">🔍 ${L.fm}에서 보기</button><button class="act ic" data-a="open" title="열어서 재생하기">▶︎</button><button class="act ic" data-a="remove" title="목록에서 빼기 (파일은 그대로)">✕</button>`;
   return `<button class="act" data-a="retry">🔁 다시 시도</button><button class="act ic" data-a="remove" title="목록에서 빼기">✕</button>`;
 }
 
@@ -537,13 +604,13 @@ function openSettings() {
     body.innerHTML = `
       <div class="card"><div class="card-title">🌓 화면 모드</div>
         <div class="seg" id="stTheme"><button data-v="system">시스템 설정</button><button data-v="light">라이트</button><button data-v="dark">다크</button></div>
-        <div class="note">‘시스템 설정’을 고르면 macOS의 라이트/다크 모드를 그대로 따라가요.</div></div>
+        <div class="note">‘시스템 설정’을 고르면 ${L.os}의 라이트/다크 모드를 그대로 따라가요.</div></div>
       <div class="card"><div class="card-title">📁 기본 저장 폴더</div>
         <div class="folder-main" style="cursor:default"><span class="folder-ico" data-art="folder"></span><div class="folder-text"><div class="folder-name">${esc(folderLabel(st.resolvedDefaultFolder))}</div><div class="folder-path">&lrm;${esc(shortPath(st.resolvedDefaultFolder))}&lrm;</div></div>
         <span class="sp"></span><button class="btn ghost sm" id="stFolder">변경…</button></div>
         <div class="folder-sub"><span class="note">앱을 켤 때마다 이 폴더가 저장 위치로 선택돼요.</span>${st.defaultFolder ? '<span class="sp"></span><button class="link" id="stReset">다운로드 폴더로</button>' : ''}</div></div>
       <div class="card"><div class="card-title">🔔 알림</div>
-        <label class="switch-row"><input type="checkbox" id="stNotify" ${st.notify ? 'checked' : ''}><span class="switch"></span>다운로드가 끝나면 macOS 알림 보내기</label></div>
+        <label class="switch-row"><input type="checkbox" id="stNotify" ${st.notify ? 'checked' : ''}><span class="switch"></span>다운로드가 끝나면 ${L.os} 알림 보내기</label></div>
       <div class="card"><div class="card-title">🚀 다운로드 엔진 <span class="note" style="margin-left:auto">yt-dlp</span></div>
         <div class="kv"><span>엔진 버전</span><b>${esc(t.engineVersion || '—')}</b></div>
         <div class="kv"><span>마지막 업데이트 확인</span><b>${t.engineChecked ? fmtWhen(t.engineChecked * 1000) : '—'}</b></div>
@@ -775,6 +842,7 @@ async function poll() {
   if (!T) { showEnded('YTROAD 앱에서 열어 주세요'); return; }
   try { S.settings = await api('/api/settings'); }
   catch { showEnded('앱 엔진에 연결하지 못했어요'); return; }
+  setPlatform(S.settings.os);
   applyTheme(S.settings.appearance);
   S.folder = S.settings.resolvedDefaultFolder;
   S.fmt = S.settings.fmt; S.quality = S.settings.quality;

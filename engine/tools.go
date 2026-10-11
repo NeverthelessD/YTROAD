@@ -64,7 +64,11 @@ func toolDefs() []toolDef {
 			{"deno", "보안 확인 도구", "🛡️", "zip", []string{deno + "deno-" + denoArch + "-apple-darwin.zip"}, "deno"},
 		}
 	case "windows":
-		ff := []string{"https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"}
+		// ffmpeg·ffprobe는 같은 zip 하나에 들어 있어서 한 번만 받아요
+		ff := []string{
+			"https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip",
+			"https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip",
+		}
 		return []toolDef{
 			{"yt-dlp", "다운로드 엔진", "🚀", "raw", []string{gh + "yt-dlp.exe"}, ""},
 			{"ffmpeg", "변환 도구", "🎛️", "zip", ff, "ffmpeg.exe"},
@@ -303,15 +307,20 @@ func (t *Tools) fetchTool(d toolDef, url, tmp, dest string) error {
 		}
 		return finishExecutable(part, dest)
 	}
-	zipPath := filepath.Join(tmp, d.Name+".zip")
-	if err := download(context.Background(), url, zipPath, progress); err != nil {
-		return err
+	// 같은 주소의 zip은 한 번만 받아요 (Windows: ffmpeg와 ffprobe가 같은 zip)
+	zipPath := filepath.Join(tmp, "dl-"+sha256Hex(url)[:12]+".zip")
+	if !fileExists(zipPath) {
+		if err := download(context.Background(), url, zipPath, progress); err != nil {
+			return err
+		}
+	} else if st, err := os.Stat(zipPath); err == nil {
+		t.set(d.Name, func(i *ToolItem) { i.Done, i.Total = st.Size(), st.Size() })
 	}
 	out := filepath.Join(tmp, d.Name+".out")
 	if err := extractZipFile(zipPath, d.Member, out); err != nil {
+		os.Remove(zipPath)
 		return err
 	}
-	os.Remove(zipPath)
 	return finishExecutable(out, dest)
 }
 
@@ -427,6 +436,7 @@ func (t *Tools) engineVersion() string {
 func toolCmd(ctx context.Context, name string, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Env = toolEnv()
+	hideWindow(cmd) // Windows: 검은 명령 창이 뜨지 않게
 	return cmd
 }
 
@@ -438,7 +448,8 @@ func toolEnv() []string {
 	}
 	env := []string{}
 	for _, e := range os.Environ() {
-		if !strings.HasPrefix(e, "PATH=") && !strings.HasPrefix(e, "DENO_") {
+		up := strings.ToUpper(e)
+		if !strings.HasPrefix(up, "PATH=") && !strings.HasPrefix(up, "DENO_") {
 			env = append(env, e)
 		}
 	}
@@ -530,6 +541,11 @@ func extractZipFile(zipPath, name, dest string) error {
 		}
 	}
 	return fmt.Errorf("받은 파일 안에 %s가 없어요", name)
+}
+
+func sha256Hex(s string) string {
+	h := sha256.Sum256([]byte(s))
+	return hex.EncodeToString(h[:])
 }
 
 func sha256File(p string) string {

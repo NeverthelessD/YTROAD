@@ -1,6 +1,6 @@
 # YTROAD
 
-유튜브 영상 · 음악 다운로더 (macOS) — made by. Nevertheless_D
+유튜브 영상 · 음악 다운로더 (macOS · Windows) — made by. Nevertheless_D
 
 주소를 붙여넣고 형식만 고르면 내 맥에 바로 저장해요. 개인적인 용도로만 사용해 주세요.
 
@@ -11,7 +11,7 @@
 - **화면**: 라이트 / 다크 / 시스템 설정 따르기(기본)
 - **자동 업데이트**: 앱은 이 저장소의 `releases/latest.json`을, 다운로드 엔진(yt-dlp)은 하루에 한 번 스스로 업데이트해요. 오른쪽 위 버전 배지에서 수동 확인 · 이전 버전 되돌리기도 돼요.
 
-## 설치
+## 설치 — macOS
 
 1. [`releases/`](releases) 폴더에서 가장 최신 `YTROAD-x.y.z.zip`을 받아 압축을 풀어요.
 2. `YTROAD.app`을 **응용 프로그램** 폴더로 옮겨요. (업데이트가 동작하려면 꼭 옮겨 주세요)
@@ -21,10 +21,19 @@
 모든 구성요소는 `~/Library/Application Support/YTROAD` 한 폴더에만 설치돼요.
 지우려면 앱을 휴지통에 버리고 그 폴더도 지우면 끝이에요.
 
+## 설치 — Windows 10 · 11
+
+1. [`releases/`](releases) 폴더에서 가장 최신 `YTROAD-win-x.y.z.zip`을 받아 **모두 압축 풀기**를 해요.
+2. `YTROAD.exe`를 문서나 바탕 화면 같은 내 폴더에 두고 실행해요. (Program Files 안에 두면 업데이트가 안 돼요)
+3. "Windows의 PC 보호" 창이 뜨면 **추가 정보 → 실행**.
+4. 처음 한 번 다운로드 도구(약 200MB)를 자동으로 받아요.
+
+구성요소는 `%LOCALAPPDATA%\YTROAD` 한 폴더에만 설치돼요. 사용 가이드: [`docs/YTROAD_Windows_사용가이드.png`](docs)
+
 ## 사용한 오픈소스
 
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) (Unlicense) — 다운로드 엔진
-- [FFmpeg](https://ffmpeg.org) ([martin-riedl.de](https://ffmpeg.martin-riedl.de) 빌드) — 합치기 · 변환
+- [FFmpeg](https://ffmpeg.org) (macOS: [martin-riedl.de](https://ffmpeg.martin-riedl.de), Windows: [gyan.dev](https://www.gyan.dev/ffmpeg/builds/) 빌드) — 합치기 · 변환
 - [Deno](https://deno.com) (MIT) — yt-dlp가 유튜브 보안 확인에 사용
 - 글꼴: [Pretendard](https://github.com/orioncactus/pretendard), [Unbounded](https://github.com/googlefonts/unbounded) (SIL OFL)
 
@@ -33,10 +42,10 @@
 ## 폴더 구조
 
 ```
-engine/     Go 엔진 (로컬 서버 · 다운로드 대기열 · 도구 설치 · 업데이트)
+engine/     Go 엔진 (로컬 서버 · 다운로드 대기열 · 도구 설치 · 업데이트 · Windows 실행기)
 engine/web/ 앱 화면 (HTML · CSS · JS · 일러스트)
 app/        YTROAD.app 껍데기 (실행 스크립트 · Info.plist · 아이콘)
 scripts/    빌드 스크립트
-releases/   업데이트 파일 (YTROAD-x.y.z.zip, latest.json)
+releases/   업데이트 파일 (맥: YTROAD-x.y.z.zip · latest.json / Windows: YTROAD-win-x.y.z.zip · latest-win.json)
 docs/       사용 가이드 이미지
 ```
