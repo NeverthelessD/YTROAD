@@ -1,0 +1,5 @@
+--- A 실행 중
+ 2446     1 S    /Applications/YTROAD.app/Contents/MacOS/YTROAD
+ 2458  2446 S    /Users/runner/Library/Application Support/YTROAD/bin/ytroad-engine
+ 2460  2458 S    /Users/runner/Library/Application Support/YTROAD/bin/ytroad-engine
+--- D 종료 뒤

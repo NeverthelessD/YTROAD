@@ -1,0 +1,5 @@
+commit: ec29443946aab770267845e67bae094b5512c830  version: 1.2.0  started: 2026-10-22T16:18:54Z
+ProductName:		macOS
+ProductVersion:		15.7.9
+BuildVersion:		24G830
+arm64

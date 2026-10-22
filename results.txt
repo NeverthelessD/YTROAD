@@ -1,0 +1,21 @@
+PASS  A1 앱을 열면 엔진이 준비됨
+PASS  A2 엔진이 Dock 앱 방식으로 켜짐(shell=native)
+PASS  A3 화면 상태(/api/poll)에 Dock 앱 표시
+PASS  A4 앱 껍데기가 Apple Silicon · Intel 겸용
+PASS  A5 앱 창(WKWebView)이 화면을 불러옴
+PASS  A6 엔진이 YTROAD 앱의 자식 (앱 2446 → 지킴이 2458 → 엔진 2460)
+PASS  B1 다시 열기 뒤에도 앱·엔진 그대로
+PASS  C1 엔진 다시 켜짐
+PASS  C2 앱은 그대로
+PASS  D1 앱·엔진 모두 꺼짐
+PASS  E1 앱·엔진 모두 꺼짐
+PASS  F1 남은 엔진 없음
+PASS  G0 지난번과 같은 주소로 켜짐 (49166 → 49166)
+PASS  G1 새로 열린 앱이 엔진을 켬
+PASS  G2 앱이 새로 열림 (2767 → 2799)
+PASS  H1 다시 열린 앱이 엔진을 켬
+PASS  H4 예전 창의 주소(47123)로 켜짐 (47123)
+PASS  H2 앱 하나만 떠 있음 (1개)
+PASS  H3 끝나면 모두 꺼짐
+PASS  I1 Intel 용 엔진으로 켜짐
+PASS  I2 엔진이 응답함
