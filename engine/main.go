@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -24,6 +25,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 )
 
@@ -80,6 +82,12 @@ func runEngine() {
 	if support == "" {
 		support = defaultSupportDir(home, "YTROAD")
 	}
+	// 맥: YTROAD.app(Dock 앱)은 엔진을 '지킴이' 모드로 켜요 (supervise.go 참고)
+	if env("SUPERVISOR") == "1" {
+		os.MkdirAll(support, 0o755)
+		runSupervisor(support)
+		return
+	}
 	token := os.Getenv("YTROAD_TOKEN")
 	if token == "" {
 		token = randID(16)
@@ -108,9 +116,13 @@ func runEngine() {
 	app.port = ln.Addr().(*net.TCPAddr).Port
 	writeFileAtomic(filepath.Join(support, "token"), []byte(token), 0o600)
 	writeFileAtomic(filepath.Join(support, "port"), []byte(strconv.Itoa(app.port)), 0o644)
-	log.Printf("YTROAD %s listening on %d", build, app.port)
+	// lastport: 다음에 켤 때도 같은 주소를 쓰려고 남겨 둬요 (고장 뒤 다시 켜기 · 예전 창 안내)
+	writeFileAtomic(filepath.Join(support, "lastport"), []byte(strconv.Itoa(app.port)), 0o644)
+	log.Printf("YTROAD %s listening on %d (pid %d, 지킴이 %v)", build, app.port, os.Getpid(), env("CHILD") == "1")
 
 	go app.idleWatcher()
+	go app.watchParent()
+	go app.watchSignals()
 	go app.upd.autoLoop()
 	go app.tools.autoLoop()
 	srv := &http.Server{Handler: hostGuard(app.routes())}
@@ -147,13 +159,43 @@ func listen(pref string) net.Listener {
 // ---------------------------------------------------------------- lifecycle
 
 // 창을 닫고 10분 동안 아무 요청이 없고, 받는 중인 영상도 없으면 스스로 종료합니다.
+// Dock 앱(YTROAD.app)이 켠 엔진은 앱이 켜져 있는 동안 계속 켜 둬요. 앱을 종료하면 엔진도 함께 꺼져요.
 func (a *App) idleWatcher() {
+	if nativeShell() {
+		return
+	}
 	for range time.Tick(15 * time.Second) {
 		idle := time.Now().Unix() - a.lastSeen.Load()
 		if idle > 600 && !a.jobs.Busy() && !a.tools.Running() && !a.upd.Busy() {
 			a.shutdown()
 		}
 	}
+}
+
+// nativeShell: Dock 에 보이는 맥 앱(app/shell/main.swift)이 엔진을 켰는지
+func nativeShell() bool { return env("SHELL") == "native" }
+
+// watchParent: 지킴이(부모)가 사라지면 엔진도 끝나요 — 혼자 남아 몰래 돌지 않게
+func (a *App) watchParent() {
+	if env("CHILD") != "1" {
+		return
+	}
+	ppid := os.Getppid()
+	for range time.Tick(2 * time.Second) {
+		if os.Getppid() != ppid {
+			log.Printf("지킴이가 사라져서 끝내요")
+			a.shutdown()
+		}
+	}
+}
+
+// watchSignals: 종료 신호를 받으면 받는 중인 다운로드(yt-dlp · ffmpeg)까지 정리하고 끝나요
+func (a *App) watchSignals() {
+	ch := make(chan os.Signal, 2)
+	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
+	s := <-ch
+	log.Printf("종료 신호(%v)를 받아 정리하고 끝내요", s)
+	a.shutdown()
 }
 
 func (a *App) shutdown() {
@@ -295,7 +337,7 @@ func (a *App) routes() http.Handler {
 	}
 
 	api("/api/ping", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, map[string]any{"ok": true, "build": build})
+		writeJSON(w, map[string]any{"ok": true, "build": build, "shell": env("SHELL")})
 	})
 	api("/api/quit", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]any{"ok": true})
@@ -307,6 +349,7 @@ func (a *App) routes() http.Handler {
 			"jobs":   a.jobs.Snapshot(),
 			"tools":  a.tools.State(),
 			"update": a.upd.State(),
+			"shell":  env("SHELL"),
 		})
 	})
 	api("/api/settings", a.handleSettings)

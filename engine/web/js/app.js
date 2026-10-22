@@ -767,10 +767,12 @@ async function restartApp() {
 
 // ════════════════════════════════════════════════ 종료
 let ended = false;
-function showEnded(msg) {
+function showEnded(msg, sub) {
   ended = true;
-  document.body.innerHTML = `<div class="ended"><img src="/icon.png" alt=""><b>${msg}</b><span>이 창은 닫아도 돼요. 다시 쓰려면 YTROAD 앱을 실행하세요.</span></div>`;
+  document.body.innerHTML = `<div class="ended"><img src="/icon.png" alt=""><b>${msg}</b><span>${sub || '이 창은 닫아도 돼요. 다시 쓰려면 YTROAD 앱을 실행하세요.'}</span></div>`;
 }
+// YTROAD.app(Dock 앱) 창 안에서 열렸는지 (앱 창은 UA 에 YTROADShell 을 붙여요)
+const IS_SHELL = navigator.userAgent.includes('YTROADShell');
 async function quitApp() {
   const busy = S.jobs.some((j) => ACTIVE.includes(j.state) || j.state === 'queued');
   if (!confirm(busy ? '받는 중인 영상이 있어요. 모두 취소하고 종료할까요?' : 'YTROAD를 종료할까요?')) return;
@@ -823,6 +825,12 @@ async function poll() {
   try {
     const p = await api('/api/poll');
     fails = 0;
+    // 맥 1.2.0 부터 YTROAD 는 Dock 에 보이는 앱 창으로 열려요. 예전 Chrome 창이 남아 있으면 안내만 보여 주고 멈춰요.
+    if (p.shell === 'native' && !IS_SHELL) {
+      showEnded('YTROAD가 새 모습으로 바뀌었어요', '이제 YTROAD는 Dock에 아이콘이 있는 앱으로 열려요. 이 창은 닫아도 돼요.');
+      setTimeout(() => { try { window.close(); } catch { /* 닫을 수 없으면 안내만 보여 줘요 */ } }, 2500);
+      return;
+    }
     S.jobs = p.jobs; S.tools = p.tools;
     renderSetup(p.tools);
     renderJobs(p.jobs);
