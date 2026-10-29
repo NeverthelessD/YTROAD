@@ -40,9 +40,11 @@ printf '%s' "$VERSION" > "$WIN/stage/version.txt"
 WZIP="YTROAD-win-$VERSION.zip"
 python3 "$ROOT/scripts/zipdir.py" "$WIN/stage" "$ROOT/releases/$WZIP"
 write_feed "$WZIP" latest-win.json
+find "$ROOT/releases" -maxdepth 1 -name "YTROAD-win-*.zip" ! -name "$WZIP" -delete   # 업데이트용 zip 은 최신판만
 
 # 처음 설치용: YTROAD 폴더 안에 YTROAD.exe (+ 사용 가이드)
 cp "$WIN/stage/YTROAD.exe" "$WIN/YTROAD/YTROAD.exe"
 if [ -f "$ROOT/docs/YTROAD_Windows_사용가이드.png" ]; then cp "$ROOT/docs/YTROAD_Windows_사용가이드.png" "$WIN/YTROAD/"; fi
 python3 "$ROOT/scripts/zipdir.py" "$WIN" "$DIST/YTROAD-Windows.zip" YTROAD
 echo "✔ dist/YTROAD-Windows.zip (Windows · 처음 설치용)"
+bash "$ROOT/scripts/publish-download.sh"   # download/YTROAD-Windows.zip 도 새 버전으로 (커밋 · 푸시)

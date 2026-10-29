@@ -1,5 +1,11 @@
 # YTROAD
 
+## ⬇️ 앱 받기
+
+**[YTROAD.zip 받기 (macOS)](https://github.com/NeverthelessD/YTROAD/raw/main/download/YTROAD.zip)** · **[YTROAD-Windows.zip 받기 (Windows)](https://github.com/NeverthelessD/YTROAD/raw/main/download/YTROAD-Windows.zip)**
+
+항상 가장 최신판이에요. zip 안에 앱과 사용 가이드가 함께 들어 있어요.
+
 유튜브 영상 · 음악 다운로더 (macOS · Windows) — made by. Nevertheless_D
 
 주소를 붙여넣고 형식만 고르면 내 맥에 바로 저장해요. 개인적인 용도로만 사용해 주세요.
@@ -13,7 +19,7 @@
 
 ## 설치 — macOS
 
-1. [`releases/`](releases) 폴더에서 가장 최신 `YTROAD-x.y.z.zip`을 받아 압축을 풀어요.
+1. 위의 **앱 받기**에서 `YTROAD.zip`을 받아 압축을 풀어요. (안에 앱과 사용 가이드가 들어 있어요)
 2. `YTROAD.app`을 **응용 프로그램** 폴더로 옮겨요. (업데이트가 동작하려면 꼭 옮겨 주세요)
 3. 처음 열 때 경고가 뜨면 **시스템 설정 → 개인정보 보호 및 보안 → "그래도 열기"**.
 4. 처음 한 번 다운로드 도구(약 200MB)를 자동으로 받아요. 예전 YT Downloader를 쓰던 맥이면 그 도구를 가져와서 금방 끝나요.
@@ -23,7 +29,7 @@
 
 ## 설치 — Windows 10 · 11
 
-1. [`releases/`](releases) 폴더에서 가장 최신 `YTROAD-win-x.y.z.zip`을 받아 **모두 압축 풀기**를 해요.
+1. 위의 **앱 받기**에서 `YTROAD-Windows.zip`을 받아 **모두 압축 풀기**를 해요.
 2. `YTROAD.exe`를 문서나 바탕 화면 같은 내 폴더에 두고 실행해요. (Program Files 안에 두면 업데이트가 안 돼요)
 3. "Windows의 PC 보호" 창이 뜨면 **추가 정보 → 실행**.
 4. 처음 한 번 다운로드 도구(약 200MB)를 자동으로 받아요.
