@@ -1,0 +1,2 @@
+a57dbd8ffc133b4c7b9aedc5cfb1065db9771807722f8a1ce9905fccdfb55dcf  /Users/runner/work/YTROAD/YTROAD/ci-out/YTROAD-1.2.1.zip
+a495d2de720caabbe029990165f238152381dd8b77b8a14c0eda5a59dfca0406  /Users/runner/work/YTROAD/YTROAD/ci-out/YTROAD-first-install.zip
