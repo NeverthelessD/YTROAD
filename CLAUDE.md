@@ -18,7 +18,7 @@ to `~/Library/Application Support/YTROAD/bin/ytroad-engine`, runs it as its own 
     Copies from the old `Application Support/YTDownloader/bin` when present. yt-dlp self-updates (`-U`) daily and after a 403/bot failure.
   - `jobs.go` oEmbed preview, download queue (max 10 parallel), yt-dlp progress-template parsing, Korean error messages
   - `update.go` app auto-update from `releases/latest.json` in this repo (raw.githubusercontent.com), sha256 check,
-    swaps the .app (backup in Support/backup for rollback), restart keeps port+token so the open window reloads.
+    swaps the .app (backup in Support/backup.noindex (hidden from Spotlight; old Support/backup is migrated on start; lsregister -u after swap/rollback) for rollback), restart keeps port+token so the open window reloads.
   - `proc_unix.go` / `proc_windows.go` — OS helpers (process groups, hidden consoles, open/reveal, notifications, message box).
 - `engine/web/` — `index.html`, `css/app.css`, `js/art.js` (SVG illustrations), `js/app.js` (all UI logic), fonts.
 
